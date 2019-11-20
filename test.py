@@ -3,8 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-building_id = 1434
-meter = 0
+building_id = 1427
+meter = 2
 raw_data = pd.read_csv(r'../New folder/%s_%s.csv' % (building_id,meter))
 raw_data = raw_data.drop(columns = ['building_id','meter'])
 raw_data.timestamp = pd.to_datetime(raw_data.timestamp)
@@ -31,4 +31,4 @@ plt.plot(raw_data.loc[:, 'timestamp'], raw_data.loc[:,'meter_reading'])
 plt.plot(raw_data.loc[:, 'timestamp'],y_hat)
 plt.ylabel('meter reading')
 plt.xlabel('timestamp')
-plt.savefig("NDVI_plot.png")
+plt.show()
