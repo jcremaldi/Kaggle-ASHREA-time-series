@@ -10,11 +10,12 @@ class GenerateCoef:
         self.meter = meter
         self.graph_toggle = graph_toggle
         self.data_prep()
-        self.sepatate_off_days()
+        self.separate_off_days()
         self.monthly_coef()
         self.weekly_coef()
         self.daily_coef()
         self.hourly_coef()
+        self.ave_meter()
 
     def data_prep(self):
         day_conv = {'Monday':1, 'Tuesday':2, 'Wednesday':3, 'Thursday':4, 'Friday':5, 'Saturday':6, 'Sunday':7}        
@@ -28,8 +29,8 @@ class GenerateCoef:
         self.raw_data['M'] = self.raw_data.index.month
         self.raw_data['date'] = self.raw_data.index.date
         self.raw_data['D'] = self.raw_data['D'].map(day_conv)
-        
-    def sepatate_off_days(self):
+                
+    def separate_off_days(self):
         holidays = ['2016-01-01','2016-01-18','2016-02-15','2016-05-30','2016-07-04','2016-09-05'
                 ,'2016-10-10','2016-11-11','2016-11-24','2016-12-21','2016-12-22','2016-12-23'
                 ,'2016-12-24','2016-12-25','2016-12-26','2016-12-27','2016-12-28','2016-12-29'
@@ -38,12 +39,12 @@ class GenerateCoef:
         self.raw_data.loc[self.raw_data.date.astype('str').isin(holidays),'D'] = 99
         
         off_hours_data = self.raw_data[self.raw_data.D.isin([6,7,99])]
-        self.off_hours_energy = off_hours_data.meter_reading.mean()
+        self.off_hours_ave = off_hours_data.meter_reading.mean()
         self.raw_data = self.raw_data.drop(off_hours_data.index)
     
     def monthly_coef(self):
         monthly = self.raw_data.groupby('M').meter_reading.mean().reset_index()
-        trendM = np.poly1d(np.polyfit(monthly.M, monthly.meter_reading, 5))
+        trendM = np.poly1d(np.polyfit(monthly.M, monthly.meter_reading, 4))
         self.monthly_coef = trendM.coef
         self.trendMpoly = np.poly1d(trendM) 
 
@@ -79,7 +80,7 @@ class GenerateCoef:
     def hourly_coef(self):        
         self.raw_data['mr_mwd_adj'] = self.raw_data.mr_mw_adj - self.trendDpoly(self.raw_data.D)
         hourly = self.raw_data.groupby('H').mr_mwd_adj.mean().reset_index()
-        trendH = np.poly1d(np.polyfit(hourly.H, hourly.mr_mwd_adj, 7))
+        trendH = np.poly1d(np.polyfit(hourly.H, hourly.mr_mwd_adj, 4))
         self.hourly_coef = trendH.coef
         self.trendHpoly = np.poly1d(trendH)
         self.raw_data['mr_mwdh_adj'] = self.raw_data.mr_mwd_adj - self.trendHpoly(self.raw_data.H)
@@ -89,3 +90,7 @@ class GenerateCoef:
             plt.plot(hourly.H,self.trendHpoly(hourly.H))
             plt.show()
 
+    def ave_meter(self):
+        self.ave_meter = self.raw_data['mr_mwdh_adj'].mean()
+        
+# generate (after all the adjustments) the average energy use: self.raw_data['mr_mwdh_adj']
