@@ -31,11 +31,7 @@ class GenerateCoef:
         self.raw_data['D'] = self.raw_data['D'].map(day_conv)
                 
     def separate_off_days(self):
-        holidays = ['2016-01-01','2016-01-18','2016-02-15','2016-05-30','2016-07-04','2016-09-05'
-                ,'2016-10-10','2016-11-11','2016-11-24','2016-12-21','2016-12-22','2016-12-23'
-                ,'2016-12-24','2016-12-25','2016-12-26','2016-12-27','2016-12-28','2016-12-29'
-                ,'2016-12-30','2016-12-31']
-
+        holidays = pd.date_range(start='2016-01-01', end='2016-12-31', freq='D')
         self.raw_data.loc[self.raw_data.date.astype('str').isin(holidays),'D'] = 99
         
         off_hours_data = self.raw_data[self.raw_data.D.isin([6,7,99])]
@@ -44,7 +40,7 @@ class GenerateCoef:
     
     def monthly_coef(self):
         monthly = self.raw_data.groupby('M').meter_reading.mean().reset_index()
-        trendM = np.poly1d(np.polyfit(monthly.M, monthly.meter_reading, 4))
+        trendM = np.poly1d(np.polyfit(monthly.M, monthly.meter_reading, 6))
         self.monthly_coef = trendM.coef
         self.trendMpoly = np.poly1d(trendM) 
 
@@ -56,7 +52,7 @@ class GenerateCoef:
     def weekly_coef(self):
         self.raw_data['mr_m_adj'] = self.raw_data.meter_reading - self.trendMpoly(self.raw_data.M)
         weekly = self.raw_data.groupby('W').mr_m_adj.mean().reset_index()
-        trendW = np.poly1d(np.polyfit(weekly.W, weekly.mr_m_adj, 1))
+        trendW = np.poly1d(np.polyfit(weekly.W, weekly.mr_m_adj, 2))
         self.weekly_coef = trendW.coef
         self.trendWpoly = np.poly1d(trendW) 
 
@@ -68,7 +64,7 @@ class GenerateCoef:
     def daily_coef(self):        
         self.raw_data['mr_mw_adj'] = self.raw_data.mr_m_adj - self.trendWpoly(self.raw_data.W)
         daily = self.raw_data.groupby('D').mr_mw_adj.mean().reset_index()
-        trendD = np.poly1d(np.polyfit(daily.index+1, daily.mr_mw_adj, 1))
+        trendD = np.poly1d(np.polyfit(daily.index+1, daily.mr_mw_adj, 2))
         self.daily_coef = trendD.coef
         self.trendDpoly = np.poly1d(trendD)
 
@@ -80,7 +76,7 @@ class GenerateCoef:
     def hourly_coef(self):        
         self.raw_data['mr_mwd_adj'] = self.raw_data.mr_mw_adj - self.trendDpoly(self.raw_data.D)
         hourly = self.raw_data.groupby('H').mr_mwd_adj.mean().reset_index()
-        trendH = np.poly1d(np.polyfit(hourly.H, hourly.mr_mwd_adj, 4))
+        trendH = np.poly1d(np.polyfit(hourly.H, hourly.mr_mwd_adj, 6))
         self.hourly_coef = trendH.coef
         self.trendHpoly = np.poly1d(trendH)
         self.raw_data['mr_mwdh_adj'] = self.raw_data.mr_mwd_adj - self.trendHpoly(self.raw_data.H)
@@ -92,5 +88,3 @@ class GenerateCoef:
 
     def ave_meter(self):
         self.ave_meter = self.raw_data['mr_mwdh_adj'].mean()
-        
-# generate (after all the adjustments) the average energy use: self.raw_data['mr_mwdh_adj']
