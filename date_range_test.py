@@ -2,11 +2,6 @@ import pandas as pd
 import warnings
 warnings.filterwarnings("ignore")
 
-
-
-
-
-
 index = pd.date_range(start='1/1/2016  12:00:00 AM', end='12/31/2016  11:00:00 PM', freq = 'H')
 columns = ['timestamp']
 

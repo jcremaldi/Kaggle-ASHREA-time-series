@@ -31,7 +31,7 @@ class GenerateCoef:
         self.raw_data['D'] = self.raw_data['D'].map(day_conv)
                 
     def separate_off_days(self):
-        holidays = pd.date_range(start='2016-01-01', end='2016-12-31', freq='D')
+        holidays = pd.date_range(start='2016-12-21', end='2016-12-31', freq='D')
         self.raw_data.loc[self.raw_data.date.astype('str').isin(holidays),'D'] = 99
         
         off_hours_data = self.raw_data[self.raw_data.D.isin([6,7,99])]
