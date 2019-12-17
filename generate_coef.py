@@ -18,7 +18,8 @@ class GenerateCoef:
         self.ave_meter()
 
     def data_prep(self):
-        day_conv = {'Monday':1, 'Tuesday':2, 'Wednesday':3, 'Thursday':4, 'Friday':5, 'Saturday':6, 'Sunday':7}        
+        day_conv = {'Monday':1, 'Tuesday':2, 'Wednesday':3, 'Thursday':4, 'Friday':5, \
+                    'Saturday':6, 'Sunday':7}        
         
         self.raw_data.timestamp = pd.to_datetime(self.raw_data.timestamp)
         self.raw_data = self.raw_data.set_index('timestamp')
@@ -33,7 +34,9 @@ class GenerateCoef:
     def separate_off_days(self):
         holidays = pd.date_range(start='2016-12-21', end='2016-12-31', freq='D')
         self.raw_data.loc[self.raw_data.date.astype('str').isin(holidays),'D'] = 99
-        
+        other_holidays = ['2016-02-29','2016-01-01','2016-05-30','2016-11-24','2016-07-04', \
+                          '2016-03-25','2016-01-18','2016-09-05']
+        self.raw_data.loc[self.raw_data.date.astype('str').isin(other_holidays),'D'] = 99
         off_hours_data = self.raw_data[self.raw_data.D.isin([6,7,99])]
         self.off_hours_ave = off_hours_data.meter_reading.mean()
         self.raw_data = self.raw_data.drop(off_hours_data.index)
@@ -45,9 +48,7 @@ class GenerateCoef:
         self.trendMpoly = np.poly1d(trendM) 
 
         if self.graph_toggle:
-            plt.plot(monthly.M, monthly.meter_reading,'.')
-            plt.plot(monthly.M,self.trendMpoly(monthly.M))
-            plt.show()
+            self.create_graph(self.trendMpoly, monthly, 'M', 'meter_reading')
 
     def weekly_coef(self):
         self.raw_data['mr_m_adj'] = self.raw_data.meter_reading - self.trendMpoly(self.raw_data.M)
@@ -57,9 +58,7 @@ class GenerateCoef:
         self.trendWpoly = np.poly1d(trendW) 
 
         if self.graph_toggle:
-            plt.plot(weekly.W, weekly.mr_m_adj,'.')
-            plt.plot(weekly.W,self.trendWpoly(weekly.W))
-            plt.show()
+            self.create_graph(self.trendWpoly, weekly, 'W', 'mr_m_adj')
 
     def daily_coef(self):        
         self.raw_data['mr_mw_adj'] = self.raw_data.mr_m_adj - self.trendWpoly(self.raw_data.W)
@@ -69,9 +68,7 @@ class GenerateCoef:
         self.trendDpoly = np.poly1d(trendD)
 
         if self.graph_toggle:
-            plt.plot(daily.D, daily.mr_mw_adj,'.')
-            plt.plot(daily.D,self.trendDpoly(daily.D))
-            plt.show()
+            self.create_graph(self.trendDpoly, daily, 'D', 'mr_mw_adj')
 
     def hourly_coef(self):        
         self.raw_data['mr_mwd_adj'] = self.raw_data.mr_mw_adj - self.trendDpoly(self.raw_data.D)
@@ -82,9 +79,12 @@ class GenerateCoef:
         self.raw_data['mr_mwdh_adj'] = self.raw_data.mr_mwd_adj - self.trendHpoly(self.raw_data.H)
 
         if self.graph_toggle:
-            plt.plot(hourly.H, hourly.mr_mwd_adj,'.')
-            plt.plot(hourly.H,self.trendHpoly(hourly.H))
-            plt.show()
+            self.create_graph(self.trendHpoly, hourly, 'H', 'mr_mwd_adj')
 
     def ave_meter(self):
         self.ave_meter = self.raw_data['mr_mwdh_adj'].mean()
+        
+    def create_graph(self,trend_poly,df,col,adj_value):
+        plt.plot(df[col], df[adj_value],'.')
+        plt.plot(df[col],trend_poly(df[col]))
+        plt.show()
