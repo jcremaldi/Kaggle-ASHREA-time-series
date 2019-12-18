@@ -6,8 +6,8 @@ sid_floors = [8,10]
 sid_none = [6,9,11,12,13,14]
 
 raw_data = pd.read_csv('data/weather_train.csv')
-raw_data = raw_data.drop(columns=['cloud_coverage'])
 print(raw_data.info(verbose=True),'\n')
+raw_data = raw_data.drop(columns=['cloud_coverage'])
 
 def missing_weather_fill(df):
     df['air_temperature'].fillna(df['air_temperature'].mean(), inplace = True)
@@ -31,9 +31,9 @@ raw_data_sid_floors = missing_weather_fill(raw_data_sid_floors)
 raw_data_sid_none = raw_data[raw_data['site_id'].isin(sid_none)]
 raw_data_sid_none = missing_weather_fill(raw_data_sid_none)
 
-raw_data_comb = pd.concat([raw_data_sid_all, raw_data_sid_yb, raw_data_sid_floors, raw_data_sid_none])
+weather_fixed = pd.concat([raw_data_sid_all, raw_data_sid_yb, raw_data_sid_floors, raw_data_sid_none])
 
-print(raw_data_comb.info(verbose=True))
+print(weather_fixed.info(verbose=True))
 raw_data_comb.to_csv('weather_fixed.csv', index = False)
 
 

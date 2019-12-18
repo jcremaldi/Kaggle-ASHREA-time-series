@@ -2,8 +2,6 @@ import pandas as pd
 import numpy as np
 from generate_coef import GenerateCoef
 import random 
-import pickle
-
 
 creat_short = False
 generate_coef = False
@@ -77,15 +75,16 @@ def fill_timeseries(raw_data, coef_dict, data_comb):
     
     for building in raw_data.building_id.unique():
         temp_raw = raw_data[raw_data['building_id'] == building].copy()
+        temp_building = pd.DataFrame()
         for util in temp_raw.meter.unique():
             print(building,util)
-            temp_raw = raw_data[raw_data['meter'] == util].copy()
+            temp_util_raw = raw_data[raw_data['meter'] == util].copy()
             temp_missing = missing.copy()
-            if len(temp_missing) > len(temp_raw):
-                temp_missing = temp_missing.drop(temp_raw.index, errors = 'ignore')
+            if len(temp_missing) > len(temp_util_raw):
+                temp_missing = temp_missing.drop(temp_util_raw.index, errors = 'ignore')
     
                 # drop the existing data index to find the missing data
-                temp_missing = temp_missing.drop(temp_raw.index, errors = 'ignore')
+                temp_missing = temp_missing.drop(temp_util_raw.index, errors = 'ignore')
     
                 temp_missing['building_id'] = building
                 temp_missing['meter'] = util            
@@ -117,16 +116,12 @@ def fill_timeseries(raw_data, coef_dict, data_comb):
                             meter_temp = 0
                     temp_missing.loc[index,'meter_reading'] = meter_temp
                     #print(time_unit, index, p(temp_missing.loc[index, time_unit]), temp_save, meter_temp)    
-                
-                temp_missing = pd.concat([temp_missing, off_hours_temp], sort=True)
-                
-            temp_raw = pd.concat([temp_raw, temp_missing], sort=True)
-            temp_raw = temp_raw.sort_index()
+                temp_missing = pd.concat([temp_missing, off_hours_temp])
+            temp_building = pd.concat([temp_building,temp_missing])
             
-        corrected_data = pd.concat([corrected_data,temp_raw])
-        corrected_data = corrected_data.dropna(subset=['meter'])
-        corrected_data = corrected_data.drop(columns=['timestamp'])
-        corrected_data.to_csv('test.csv',mode='a', header=False)
+        corrected_data = pd.concat([corrected_data,temp_building])
+    
+    corrected_data.to_csv('test.csv',mode='a', header=False)
     corrected_data[corrected_data['meter_reading'].isnull()] = 0
                 
 if __name__ == "__main__": 
