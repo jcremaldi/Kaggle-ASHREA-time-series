@@ -2,12 +2,13 @@ import pandas as pd
 import numpy as np
 from generate_coef import GenerateCoef
 import random 
+import pickle
 
 
 creat_short = False
-generate_coef = True
-data_cbn = False
+generate_coef = False
 fill_ts = True
+data_cbn = False
 
 def create_short_raw():
     raw_data = pd.read_csv(r'../New folder/data/train.csv')
@@ -36,7 +37,9 @@ def generate_coef_dict(raw_data):
                            (data_comb['meter'] == util)),'meter_ave'] = generate_coef.ave_meter            
             data_comb.loc[((data_comb['building_id'] == building) & \
                            (data_comb['meter'] == util)),'off_hours_ave'] = generate_coef.off_hours_ave
-
+    
+    np.save('coef_dict.npy', coef_dict)
+    data_comb.to_pickle('data_comb.pkl')
     return coef_dict, data_comb      
 
 def combine_data(raw_data, data_comb):
@@ -75,8 +78,8 @@ def fill_timeseries(raw_data, coef_dict, data_comb):
     for building in raw_data.building_id.unique():
         temp_raw = raw_data[raw_data['building_id'] == building].copy()
         for util in temp_raw.meter.unique():
+            print(building,util)
             temp_raw = raw_data[raw_data['meter'] == util].copy()
-            
             temp_missing = missing.copy()
             if len(temp_missing) > len(temp_raw):
                 temp_missing = temp_missing.drop(temp_raw.index, errors = 'ignore')
@@ -116,15 +119,15 @@ def fill_timeseries(raw_data, coef_dict, data_comb):
                     #print(time_unit, index, p(temp_missing.loc[index, time_unit]), temp_save, meter_temp)    
                 
                 temp_missing = pd.concat([temp_missing, off_hours_temp], sort=True)
+                
             temp_raw = pd.concat([temp_raw, temp_missing], sort=True)
             temp_raw = temp_raw.sort_index()
+            
         corrected_data = pd.concat([corrected_data,temp_raw])
         corrected_data = corrected_data.dropna(subset=['meter'])
         corrected_data = corrected_data.drop(columns=['timestamp'])
-        corrected_data = corrected_data.sort_values(by=['building_id','meter'])
-        
-        corrected_data[corrected_data['meter_reading'].isnull()] = 0
         corrected_data.to_csv('test.csv',mode='a', header=False)
+    corrected_data[corrected_data['meter_reading'].isnull()] = 0
                 
 if __name__ == "__main__": 
     
@@ -136,12 +139,13 @@ if __name__ == "__main__":
         create_short_raw()
     if generate_coef:
         coef_dict, data_comb  = generate_coef_dict(raw_data)     
+    if fill_ts:
+        data_comb = pd.read_pickle('data_comb.pkl')
+        coef_dict = np.load('coef_dict.npy',allow_pickle='TRUE').item()
+        fill_timeseries(raw_data, coef_dict, data_comb)
     if data_cbn:
         data_comb = combine_data(raw_data, data_comb)
         print(data_comb['meter_ave'],data_comb['off_hours_ave'])
-    if fill_ts:
-        fill_timeseries(raw_data, coef_dict, data_comb)
-
 
 
 
