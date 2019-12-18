@@ -122,11 +122,13 @@ def fill_timeseries(raw_data, coef_dict, data_comb):
         corrected_data = corrected_data.dropna(subset=['meter'])
         corrected_data = corrected_data.drop(columns=['timestamp'])
         corrected_data = corrected_data.sort_values(by=['building_id','meter'])
-        corrected_data.to_csv('test.csv', index = False)
+        
+        corrected_data[corrected_data['meter_reading'].isnull()] = 0
+        corrected_data.to_csv('test.csv',mode='a', header=False)
                 
 if __name__ == "__main__": 
     
-    raw_data = pd.read_csv(r'../New folder/data/train_short.csv')
+    raw_data = pd.read_csv(r'../New folder/data/train.csv')
     # assumption: '0' readings are mistakes and should be omitted
     raw_data = raw_data[raw_data['meter_reading'] != 0]
     
