@@ -3,11 +3,6 @@ import numpy as np
 from generate_coef import GenerateCoef
 import random 
 
-creat_short = False
-generate_coef = False
-fill_ts = True
-data_cbn = False
-
 def create_short_raw():
     raw_data = pd.read_csv(r'../New folder/data/train.csv')
     
@@ -121,16 +116,26 @@ def fill_timeseries(raw_data, coef_dict, data_comb):
             
         corrected_data = pd.concat([corrected_data,temp_building])
     
-    corrected_data.to_csv('test.csv',mode='a', header=False)
+    corrected_data.to_csv('meter_fixed.csv',mode='a', header=False)
     corrected_data[corrected_data['meter_reading'].isnull()] = 0
                 
 if __name__ == "__main__": 
     
-    raw_data = pd.read_csv(r'../New folder/data/train.csv')
-    # assumption: '0' readings are mistakes and should be omitted
-    raw_data = raw_data[raw_data['meter_reading'] != 0]
+    create_short = True
+    use_short = True
+    generate_coef = True
+    fill_ts = False
     
-    if creat_short:
+    if use_short:
+        raw_data = pd.read_csv('data/train_short.csv')
+        # assumption: '0' readings are mistakes and should be omitted
+        raw_data = raw_data[raw_data['meter_reading'] != 0]    
+    else:
+        raw_data = pd.read_csv('/data/train.csv')
+        # assumption: '0' readings are mistakes and should be omitted
+        raw_data = raw_data[raw_data['meter_reading'] != 0]        
+    
+    if create_short:
         create_short_raw()
     if generate_coef:
         coef_dict, data_comb  = generate_coef_dict(raw_data)     
@@ -138,10 +143,6 @@ if __name__ == "__main__":
         data_comb = pd.read_pickle('data_comb.pkl')
         coef_dict = np.load('coef_dict.npy',allow_pickle='TRUE').item()
         fill_timeseries(raw_data, coef_dict, data_comb)
-    if data_cbn:
-        data_comb = combine_data(raw_data, data_comb)
-        print(data_comb['meter_ave'],data_comb['off_hours_ave'])
-
 
 
 
